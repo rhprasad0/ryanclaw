@@ -29,9 +29,37 @@
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design. See
+`.specify/memory/constitution.md` v2.2.0 for full principle text.*
 
-[Gates determined based on constitution file]
+For each principle, answer and cite evidence in the plan. Log any violation in
+Complexity Tracking with a concrete reason the simpler alternative was rejected.
+
+- **I. Slack Is a Full Workflow Surface** — If this adds an inbound Slack path,
+  which mechanism is used (socket mode / event subscriptions / webhook
+  callbacks / tunnel) and where does the credential live? State-mutating Slack
+  components are permitted; just disclose the shape.
+- **II. Claude Runs YOLO (with carve-outs)** — Does this plan touch AWS?
+  Remember the standing carve-out: AWS mutations (Terraform apply, Lambda
+  deploys, RDS writes, IAM, secret rotation) require operator confirmation.
+  Is any NEW carve-out proposed here? If yes, justify and note that durable
+  carve-outs belong in the constitution, not the plan.
+- **III. Solo-Operator Simplicity** — Does this require multi-env
+  infrastructure, promotion gates, compliance work, coverage thresholds, or a
+  strict TDD discipline? If yes, justify (a learning-project reason like "to
+  learn X" is acceptable; state it plainly). AWS resources are managed by
+  Terraform and live in a single account/region — note any deviation.
+- **IV. Three Independent Monitoring Paths** — If this adds an always-on
+  dependency (inbound Slack handler, agent, new MCP, scheduled job, Lambda),
+  which monitoring path covers it (Healthchecks heartbeat / synthetic Slack
+  delivery / MCP health) or does it add a justified fourth path?
+- **V. Outgrow Slack When It Hurts** — Is this adding new flow inside Slack,
+  or porting an existing flow out to TUI / CLI / dashboard? If adding: is the
+  flow small and well-scoped, or is it already showing signs of the fragility
+  threshold (brittle button states, webhook chains, silent failures)?
+
+Initial Constitution Check: [PASS | VIOLATIONS LOGGED]
+Post-Design Constitution Check: [PASS | VIOLATIONS LOGGED]
 
 ## Project Structure
 

@@ -6,12 +6,12 @@ RyanClaw is an opinionated take on [OpenClaw](https://github.com/openclaw/opencl
 
 ## Architecture
 
-See [slack-agentic-os-v3.md](slack-agentic-os-v3.md) for the full v3 architecture.
+Architectural principles live in [`.specify/memory/constitution.md`](.specify/memory/constitution.md) (currently v2.2).
 
-Slack is a one-way notification surface fed by outbound webhooks from a home server, with `@Claude` available in-channel for read-only analysis backed by MCP tools. Decisions happen at the CLI or in Claude Code, not in Slack.
+In short: Slack is a full two-way workflow surface — inbound paths, interactive components, and state mutation from Slack are all permitted. Claude (in Slack and in Claude Code) runs YOLO — autonomous execution is the default, with AWS mutations (Terraform apply, Lambda deploys, RDS writes, IAM, secret rotation) carved out and requiring operator confirmation. Runtime is hybrid: a home server running cron plus a narrow AWS surface (RDS shared with a separate jobs-pipeline repo as a least-privilege `ryanclaw_*`-schema tenant, Lambdas hosting MCP servers). Operational health is covered by three independent monitoring paths (Healthchecks heartbeat, synthetic Slack-delivery check, daily MCP health check of always-on third-party MCPs from the home server); Lambda-hosted MCPs are intentionally uncovered by path 3.
 
 ### Slack app
 
-The **Agentic Hub** app is defined in [`agentic-hub.manifest.yaml`](agentic-hub.manifest.yaml). It provides incoming webhooks to 7 channels (`#alerts`, `#ops`, `#feed-x`, `#claude-code`, `#briefing`, `#triage`, `#sandbox`) with no interactive components, no slash commands, and no event subscriptions.
+The **Agentic Hub** app is defined in [`agentic-hub.manifest.yaml`](agentic-hub.manifest.yaml). The initial manifest scopes only `incoming-webhook`; scopes will grow as features add inbound paths (socket mode, event subscriptions, interactive components, slash commands).
 
-To recreate the app: paste the manifest YAML into the "From an app manifest" flow at [api.slack.com/apps](https://api.slack.com/apps), install to the workspace, then add per-channel webhooks in app settings.
+To recreate the app: paste the manifest YAML into the "From an app manifest" flow at [api.slack.com/apps](https://api.slack.com/apps), install to the workspace, then configure webhooks and any additional scopes per the current feature plan.
