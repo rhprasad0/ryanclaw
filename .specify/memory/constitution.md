@@ -1,45 +1,44 @@
 <!--
 SYNC IMPACT REPORT
-Version: 2.1.0 → 2.2.0
-Bump rationale: MINOR — Principle IV's scope narrowed (path 3 MCP health
-check is explicitly home-server-only; Lambda-hosted MCPs are intentionally
-uncovered); Technical Constraints RDS entry tightened with a least-privilege
-`ryanclaw_*` schema boundary so multi-repo tenancy is real rather than
-documented convention. Both changes landed after an adversarial review.
+Version: 2.3.0 → 2.4.0
+Bump rationale: MINOR — Principle IV path 2 mechanism simplified. The
+synthetic Slack-delivery check no longer reads messages back via the Slack
+Web API; instead it confirms the incoming webhook returned status 200 with
+body "ok". This drops the bot token and channel-ID dependencies as part of
+the Slack Pro tier transition (no bot user on the Agentic Hub app). A
+webhook-returns-200-but-message-silently-dropped edge case is no longer
+detected automatically — the operator accepts that gap.
 
 Principles modified:
-  IV. "Three Independent Monitoring Paths" — path 3 description tightened:
-      MCP health check runs from the home server and covers the always-on
-      third-party MCPs it reaches. Lambda-hosted MCPs authored in this repo
-      are explicitly NOT in scope; their health surfaces at call time when
-      the operator sees failures in Slack or Claude Code.
+  IV. "Two Independent Monitoring Paths" — path 2 mechanism changed from
+      "post + read-back via Slack Web API" to "post + confirm 200/ok
+      webhook response." Principle title unchanged; the rule still
+      mandates two independent paths.
 
 Principles unchanged:
   I.   Slack Is a Full Workflow Surface
-  II.  Claude Runs YOLO (AWS carve-out intact; secret reads intentionally
-       remain YOLO)
+  II.  Claude Runs YOLO (AWS carve-out intact)
   III. Solo-Operator Simplicity
   V.   Outgrow Slack When It Hurts
 
 Sections touched:
-  - Technical Constraints (AWS RDS bullet): RyanClaw connects via a
-    least-privilege role scoped to the `ryanclaw_*` schema(s); jobs-pipeline
-    schemas are unreachable at the role level, not just by convention.
+  - Technical Constraints: unchanged.
+  - Development Workflow: unchanged.
 
 Templates realigned:
-  ✅ README.md — version pointer v2.0 → v2.2, AWS carve-out called out,
-     hybrid runtime summarized.
-  ✅ CLAUDE.md — version pointer v2.0 → v2.2, AWS carve-out called out.
-  ✅ .specify/templates/plan-template.md — version reference bumped to
-     v2.2.0; gate text unchanged (still valid).
+  ✅ README.md — v2.3 → v2.4; path 2 summary updated.
+  ✅ CLAUDE.md — v2.3 → v2.4.
+  ✅ .specify/templates/plan-template.md — version reference bumped.
+  ✅ scripts/slack_synthetic_post.py — deleted.
+  ✅ scripts/slack_synthetic_verify.py — deleted.
+  ✅ scripts/slack_synthetic_check.py — new; merges post + verify into a
+     single post-and-confirm-200 probe.
+  ✅ .env.example — SLACK_BOT_TOKEN and SLACK_SANDBOX_CHANNEL_ID removed.
   ✅ .specify/templates/spec-template.md — unchanged.
   ✅ .specify/templates/tasks-template.md — unchanged.
 
 Deferred items / TODOs:
-  - Lambda MCP observability is an accepted gap in Principle IV. If a Lambda
-    MCP outage proves painful in practice, add a fourth monitoring path
-    (e.g., CloudWatch alarm → Slack webhook) in a future amendment rather
-    than retrofitting warm-up retries into path 3.
+  - None.
 -->
 
 # RyanClaw Constitution
@@ -55,8 +54,11 @@ v2.0 deliberately inverted the cautious v1.0 stance on two principles (Slack
 surface and Claude autonomy). v2.1 acknowledges the hybrid runtime (home
 server plus a narrow AWS surface) and starts a YOLO carve-out list with AWS
 mutations as the first entry. v2.2 tightens RDS tenancy to a least-privilege
-role and narrows the MCP health check to home-server scope, making Lambda
-MCP observability an explicit accepted gap.
+role and narrows the MCP health check to home-server scope. v2.3 drops the
+MCP health check entirely — third-party MCPs self-alert via their SaaS
+pages and Lambda MCPs surface at call time, which turned out to be enough.
+v2.4 simplifies path 2 to a post-and-confirm-200 check, removing the Slack
+bot token dependency after the Slack Pro tier transition.
 
 ## Core Principles
 
@@ -133,31 +135,29 @@ is a valid reason — state it plainly. AWS resources go into the one and
 only environment; name them plainly (`ryanclaw-mcp-foo`), don't prefix with
 env names.
 
-### IV. Three Independent Monitoring Paths
+### IV. Two Independent Monitoring Paths
 
-Operational health MUST be covered by three independent paths: (1) a
-Healthchecks.io heartbeat pinged by the home server every 5 minutes, (2) a
-synthetic Slack-delivery check that posts to `#sandbox` and reads the post
-back via Slack MCP, (3) a daily MCP health check that runs from the home
-server and pings each always-on third-party MCP endpoint (Exa, Jobs
-Pipeline, Slack, Google Calendar), reporting failures to `#ops`.
-Lambda-hosted MCPs authored in this repo are explicitly NOT in scope for
-path 3 — cold-start false positives were not worth the warm-up retry logic.
-Each path catches failure modes the others miss.
+Operational health MUST be covered by two independent paths: (1) a
+Healthchecks.io heartbeat pinged by the home server every 5 minutes, and
+(2) a synthetic Slack-delivery check that posts a timestamped ping to
+`#sandbox` and confirms the webhook returned 200/ok, alerting `#ops` via
+webhook on any non-success response. Path 1 catches "home server or cron
+dead"; path 2 catches "Agentic Hub webhook URL broken, rate-limited, or
+otherwise rejecting."
 
-**Why**: Silent failure is the real enemy, and it gets worse — not better —
-under v2.0. With more inbound surfaces, more autonomous Claude activity, and
-now a cloud footprint, the monitoring debt compounds faster. The three paths
-are the floor, not the ceiling.
+**Why**: Silent failure is the real enemy. These two paths together cover
+the failure modes that actually bite at this scale. MCP uptime isn't worth
+its own monitoring cron: third-party MCPs (Exa, Slack, Google Calendar,
+the jobs-pipeline MCP) self-alert via their SaaS provider pages, and
+Lambda-hosted MCPs authored in this repo surface failures at call time
+when the operator hits one from Slack or Claude Code.
 
 **How to apply**: Any new always-on dependency (inbound Slack handler,
-agent, new home-server MCP, scheduled job) states which of the three paths
-covers it or justifies adding a fourth. Lambda-hosted MCPs are the explicit
-exception: path 3 does not cover them, and their health surfaces at call
-time when the operator sees a failure in a Slack thread or Claude Code
-session. If a particular Lambda MCP's outage cost proves unacceptable, add
-a fourth monitoring path (e.g., CloudWatch alarm → Slack webhook) in an
-amendment rather than overloading path 3.
+agent, scheduled job, Lambda) either states which of the two paths covers
+it, justifies a third path, or explicitly accepts the gap in the plan.
+Home-server crons and inbound Slack handlers fit path 1 or path 2
+naturally — "no monitoring" is not a valid answer for those. Lambda MCPs
+and third-party MCPs are the accepted exception, per the Why above.
 
 ### V. Outgrow Slack When It Hurts
 
@@ -259,4 +259,4 @@ Tracking table with a concrete reason the simpler alternative was rejected.
 "It's more elegant" is not a reason. "I want to learn X by building it this
 way" is a valid reason for a learning project — state it plainly and move on.
 
-**Version**: 2.2.0 | **Ratified**: 2026-04-14 | **Last Amended**: 2026-04-14
+**Version**: 2.4.0 | **Ratified**: 2026-04-14 | **Last Amended**: 2026-04-14

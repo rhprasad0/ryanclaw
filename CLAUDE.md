@@ -4,7 +4,7 @@ Slack-first autonomous AI agent, inspired by OpenClaw. Python codebase.
 
 ## Key files
 
-- `.specify/memory/constitution.md` — architectural principles (v2.2: Slack full workflow surface; Claude runs YOLO except for AWS mutations, which require operator confirmation; hybrid home-server + AWS runtime with RyanClaw as a least-privilege `ryanclaw_*`-schema tenant of the shared RDS; three monitoring paths, with Lambda-hosted MCPs intentionally outside path 3). Authoritative source for scope and constraints.
+- `.specify/memory/constitution.md` — architectural principles (v2.4: Slack full workflow surface; Claude runs YOLO except for AWS mutations, which require operator confirmation; hybrid home-server + AWS runtime with RyanClaw as a least-privilege `ryanclaw_*`-schema tenant of the shared RDS; two monitoring paths — Healthchecks heartbeat and synthetic Slack delivery via post-and-confirm-200). Authoritative source for scope and constraints.
 - `agentic-hub.manifest.yaml` — Slack app manifest. Scopes grow per feature plan; currently `incoming-webhook`-only but expansion is expected.
 
 ## Conventions

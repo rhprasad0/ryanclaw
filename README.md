@@ -6,9 +6,9 @@ RyanClaw is an opinionated take on [OpenClaw](https://github.com/openclaw/opencl
 
 ## Architecture
 
-Architectural principles live in [`.specify/memory/constitution.md`](.specify/memory/constitution.md) (currently v2.2).
+Architectural principles live in [`.specify/memory/constitution.md`](.specify/memory/constitution.md) (currently v2.4).
 
-In short: Slack is a full two-way workflow surface — inbound paths, interactive components, and state mutation from Slack are all permitted. Claude (in Slack and in Claude Code) runs YOLO — autonomous execution is the default, with AWS mutations (Terraform apply, Lambda deploys, RDS writes, IAM, secret rotation) carved out and requiring operator confirmation. Runtime is hybrid: a home server running cron plus a narrow AWS surface (RDS shared with a separate jobs-pipeline repo as a least-privilege `ryanclaw_*`-schema tenant, Lambdas hosting MCP servers). Operational health is covered by three independent monitoring paths (Healthchecks heartbeat, synthetic Slack-delivery check, daily MCP health check of always-on third-party MCPs from the home server); Lambda-hosted MCPs are intentionally uncovered by path 3.
+In short: Slack is a full two-way workflow surface — inbound paths, interactive components, and state mutation from Slack are all permitted. Claude (in Slack and in Claude Code) runs YOLO — autonomous execution is the default, with AWS mutations (Terraform apply, Lambda deploys, RDS writes, IAM, secret rotation) carved out and requiring operator confirmation. Runtime is hybrid: a home server running cron plus a narrow AWS surface (RDS shared with a separate jobs-pipeline repo as a least-privilege `ryanclaw_*`-schema tenant, Lambdas hosting MCP servers). Operational health is covered by two independent monitoring paths: a Healthchecks.io heartbeat from the home server and a synthetic Slack-delivery check that posts to `#sandbox` and confirms the Agentic Hub webhook returned 200/ok.
 
 ### Slack app
 

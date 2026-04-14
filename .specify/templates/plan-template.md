@@ -30,7 +30,7 @@
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design. See
-`.specify/memory/constitution.md` v2.2.0 for full principle text.*
+`.specify/memory/constitution.md` v2.4.0 for full principle text.*
 
 For each principle, answer and cite evidence in the plan. Log any violation in
 Complexity Tracking with a concrete reason the simpler alternative was rejected.
@@ -49,10 +49,12 @@ Complexity Tracking with a concrete reason the simpler alternative was rejected.
   strict TDD discipline? If yes, justify (a learning-project reason like "to
   learn X" is acceptable; state it plainly). AWS resources are managed by
   Terraform and live in a single account/region — note any deviation.
-- **IV. Three Independent Monitoring Paths** — If this adds an always-on
-  dependency (inbound Slack handler, agent, new MCP, scheduled job, Lambda),
-  which monitoring path covers it (Healthchecks heartbeat / synthetic Slack
-  delivery / MCP health) or does it add a justified fourth path?
+- **IV. Two Independent Monitoring Paths** — If this adds an always-on
+  dependency (inbound Slack handler, agent, scheduled job, Lambda), which
+  monitoring path covers it (Healthchecks heartbeat / synthetic Slack
+  delivery), does it add a justified third path, or does it explicitly
+  accept the gap? MCPs (third-party or Lambda-hosted) are the accepted
+  exception — they don't need to claim a path.
 - **V. Outgrow Slack When It Hurts** — Is this adding new flow inside Slack,
   or porting an existing flow out to TUI / CLI / dashboard? If adding: is the
   flow small and well-scoped, or is it already showing signs of the fragility
